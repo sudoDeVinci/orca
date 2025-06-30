@@ -15,26 +15,20 @@ from logging import(
     DEBUG
 )
 
-from pathlib import Path
-from os import environ
-from dotenv import load_dotenv
-
-
-LOGFILE:Path = Path(__file__).parent.resolve() / "discord.log"
-HANDLER = FileHandler(filename=LOGFILE, encoding='utf-8', mode='w')
-HANDLER.setFormatter(Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s"))
-
-load_dotenv()
-TOKEN = environ.get("TOKEN", None)
+from utils import (
+    HANDLER,
+    TOKEN
+)
 
 intents = Intents.default()
 intents.presences = True
 intents.message_content = True
 intents.members = True
 
-KACK = "KACK "
+KACK = "IDAT "
 
 orca = commands.Bot(command_prefix=KACK, intents=intents)
+kack = commands.Bot(command_prefix=KACK, intents=intents)
 
 @orca.event
 async def on_ready() -> None:
@@ -52,6 +46,23 @@ async def what(context: commands.Context):
     substringbeg = message.index(KACK)
     await context.send(f"Command is: {message[substringbeg+4:]}")
 
+@orca.command()
+async def italic(context: commands.Context):
+    message = context.message.content
+    substringbeg = message.index(KACK)
+    await context.send(f"*{message[substringbeg+11:].strip()}*")
+
+@orca.command()
+async def bold(context: commands.Context):
+    message = context.message.content
+    substringbeg = message.index(KACK)
+    await context.send(f"**{message[substringbeg+9:].strip()}**")
+
+@orca.command()
+async def code(context: commands.Context):
+    message = context.message.content
+    substringbeg = message.index(KACK)
+    await context.send(f"```{message[substringbeg+9:].strip()}```")
 
 orca.run(
     TOKEN,
