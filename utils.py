@@ -6,8 +6,9 @@ import asyncio
 from requests import Response
 from os import environ
 from dotenv import load_dotenv
+from datetime import datetime
 
-
+API_ENDPOINT = "https://discord.com/api/v10"
 CLIENT_ID: Final[str | None] = None
 CLIENT_SECRET: Final[str | None] = None
 CODE: Final[str | None] = None
@@ -96,8 +97,61 @@ def read_json(fp: Path) -> dict[str, Any] | None:
     
 
 async def req(fn: Callable, url: str, **kwargs) -> Response:
+    """
+    Asynchronously performs a request using the provided function and URL.
+    Args:
+        fn (Callable): The function to use for the request (e.g., requests.get, requests.post).
+        url (str): The URL to which the request will be made.
+        **kwargs: Additional keyword arguments to pass to the request function.
+    Returns:
+        Response: The response object returned by the request function.
+    """
     kwargs['timeout'] = 30
     kwargs.setdefault('headers', {})
-    r = await asyncio.to_thread(fn, url, **kwargs)
+    r = await asyncio.to_thread(fn, f"{API_ENDPOINT}{url}", **kwargs)
     await asyncio.sleep(0.10)
     return r
+
+
+def check_time(hour: int, minute: int) -> int:
+    current = datetime.now()
+    
+    # Calculate seconds elapsed today
+    current_seconds = current.hour * 3600 + current.minute * 60 + current.second
+    next_seconds = (hour * 3600) + (minute * 60)
+    
+    if current_seconds < next_seconds:
+        # Next hour is today
+        return next_seconds - current_seconds
+    else:
+        # Next hour is tomorrow (24 hours from now minus time elapsed today)
+        return (24 * 3600) - current_seconds + next_seconds
+    
+def remove_think_tags_section(text: str) -> str:
+    """
+    Removes the 'thinking' sections from the text, which is enclosed in <think></think> tags.
+    Args:
+        text (str): The input text containing <think> tags.
+    Returns:
+        str: The text with the <think> section removed.
+    """
+    import re
+    
+    # Use regex to remove all <think>...</think> sections (including nested or malformed tags)
+    # This pattern handles:
+    # - Multiple sections
+    # - Whitespace variations
+    # - Case insensitive tags
+    # - Potential malformed/unclosed tags
+    pattern = r'<think\b[^>]*>.*?</think>'
+    
+    # Remove all think sections (case insensitive, multiline, dotall)
+    cleaned_text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    # Clean up any leftover orphaned opening tags that might not have been closed
+    cleaned_text = re.sub(r'<think\b[^>]*>', '', cleaned_text, flags=re.IGNORECASE)
+    
+    # Clean up multiple consecutive whitespace/newlines that might be left behind
+    cleaned_text = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_text)
+    
+    return cleaned_text.strip()
